@@ -2,7 +2,8 @@ package com.apolodevsystem.imageclassification.ml
 
 import android.content.Context
 import android.graphics.Bitmap
-import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.InterpreterApi
+import org.tensorflow.lite.InterpreterApi.Options.TfLiteRuntime
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
@@ -21,12 +22,15 @@ class NsfwTfliteClassifier(
     labelsAssetPath: String = "labels.txt",
 ) : AutoCloseable {
 
-    private val interpreter: Interpreter
+    private val interpreter: InterpreterApi
     private val labels: List<String>
 
     init {
         labels = loadLabels(labelsAssetPath)
-        interpreter = Interpreter(loadModelFile(modelAssetPath))
+        interpreter = InterpreterApi.create(
+            loadModelFile(modelAssetPath),
+            InterpreterApi.Options().setRuntime(TfLiteRuntime.FROM_SYSTEM_ONLY),
+        )
     }
 
     fun classify(bitmap: Bitmap): ClassificationResult {

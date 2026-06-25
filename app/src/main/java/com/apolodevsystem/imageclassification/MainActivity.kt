@@ -38,6 +38,8 @@ import androidx.compose.ui.draw.blur
 import com.apolodevsystem.imageclassification.ui.theme.ImageClassificationTheme
 import com.apolodevsystem.imageclassification.ml.ClassificationResult
 import com.apolodevsystem.imageclassification.ml.NsfwTfliteClassifier
+import com.google.android.gms.tflite.java.TfLite
+import com.google.android.gms.tasks.Tasks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.graphics.Bitmap
@@ -70,6 +72,11 @@ fun AssetsNsfwScreen(modifier: Modifier = Modifier) {
         rows.clear()
 
         try {
+            withContext(Dispatchers.IO) {
+                // Inicializa o runtime do TFLite via Google Play Services antes de qualquer inferência
+                Tasks.await(TfLite.initialize(context))
+            }
+
             withContext(Dispatchers.Default) {
                 NsfwTfliteClassifier(context).use { classifier ->
                     val images = context.assets

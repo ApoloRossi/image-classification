@@ -13,9 +13,9 @@ Android app that classifies images from the `assets/` folder using a local Tenso
 
 ---
 
-## TensorFlow Lite — local library setup
+## TensorFlow Lite via Google Play Services
 
-The project uses the **official TFLite runtime + Support Library** directly from Maven — no custom AAR or local `.jar` needed.
+The project uses the TFLite runtime **provided by Google Play Services** instead of bundling it in the APK. This reduces APK size significantly (the runtime ~1.5 MB is not shipped with the app; it lives on the device).
 
 ### `app/build.gradle.kts`
 
@@ -27,12 +27,29 @@ android {
 }
 
 dependencies {
-    implementation("org.tensorflow:tensorflow-lite:2.16.1")
-    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
+    // Runtime provided by Google Play Services — NOT bundled in the APK
+    implementation("com.google.android.gms:play-services-tflite-java:16.4.0")
+    implementation("com.google.android.gms:play-services-tflite-support:16.1.0")
 }
 ```
 
 > `noCompress += "tflite"` is required. Without it, Android compresses the asset and `FileChannel.map()` fails at runtime.
+
+### Initialization (required before any inference)
+
+The Play Services runtime must be initialized **once** before the first call to the classifier. The app does this inside the coroutine that loads images, on `Dispatchers.IO`:
+
+```kotlin
+import com.google.android.gms.tflite.java.TfLite
+import com.google.android.gms.tasks.Tasks
+
+// Before instantiating NsfwTfliteClassifier:
+withContext(Dispatchers.IO) {
+    Tasks.await(TfLite.initialize(context))
+}
+```
+
+`Tasks.await()` blocks the thread until the Play Services runtime is ready, making it safe to call right after inside `Dispatchers.Default`.
 
 ### Model & labels
 
@@ -99,8 +116,8 @@ app/src/main/
 | Target SDK | 36 |
 | Kotlin | — |
 | Compose BOM | via `libs.versions.toml` |
-| TFLite runtime | 2.16.1 |
-| TFLite Support | 0.4.4 |
+| play-services-tflite-java | 16.4.0 |
+| play-services-tflite-support | 16.1.0 |
 
 ---
 
